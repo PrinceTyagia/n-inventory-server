@@ -43,7 +43,7 @@ app.use("/api/v1/",locRouter)
 app.use("/api/v1/",roleRouter)
 
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.AUTH_SERVICE_PORT || 8000;
 
 app.listen(PORT, () => {
     console.log(`✅ Auth Service is running on port ${PORT}`);
