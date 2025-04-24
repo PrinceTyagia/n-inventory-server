@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "NodeNext",
+    "moduleResolution": "node16",
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    // "noImplicitAny": true,
+    // "noEmit": true,
+    "allowImportingTsExtensions": false
+  },
+  "include": ["src/auth-service/**/*", "src/packages"]
+}

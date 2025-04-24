@@ -1,0 +1,53 @@
+{
+  "name": "new-microservice",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "swagger": "ts-node src/auth-service/swagger.ts",
+    "dev": "nodemon src/auth-service/app.ts",
+    "start": "node dist/auth-service/app.js",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.8.4",
+    "bcryptjs": "^3.0.2",
+    "concurrently": "^9.1.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.5.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "ioredis": "^5.6.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.2",
+    "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.10.1",
+    "nodemon": "^3.1.9",
+    "otp-generator": "^4.0.1",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@tsconfig/node-lts": "^22.0.1",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/crypto-js": "^4.2.2",
+    "@types/ejs": "^3.1.5",
+    "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.14.1",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^6.4.17",
+    "@types/otp-generator": "^4.0.2",
+    "@types/swagger-ui-express": "^4.1.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
