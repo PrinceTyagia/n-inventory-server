@@ -12,7 +12,8 @@
     "allowSyntheticDefaultImports": true,
     // "noImplicitAny": true,
     // "noEmit": true,
-    "allowImportingTsExtensions": false
+    "allowImportingTsExtensions": false,
+    "types": ["node"]
   },
   "include": ["src/**/*", "packages"]
 }
