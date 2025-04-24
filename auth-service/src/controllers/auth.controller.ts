@@ -2,11 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import User, { IUser } from '../models/User';
 import Role from '../models/Role';
 import jwt from 'jsonwebtoken';
-import { setAuthCookies } from '../../packages/midleware/cookieMiddleware';
-import { AppError } from '../../packages/error-handler/index'; 
+import { setAuthCookies } from '../packages/midleware/cookieMiddleware';
+import { AppError } from '../packages/error-handler/index'; 
 import { checkSubscriptionStatus,updateLastLoginTime } from '../lib/helper';
 import otpGenerator from 'otp-generator';
-import { sendOtpToEmail } from '../../packages/email-sender/emailSender';
+import { sendOtpToEmail } from '../packages/email-sender/emailSender';
 
 
 

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Organization from "../models/organisation";
 import User from "../models/User";
-import { sendOtpToEmail } from '../../packages/email-sender/emailSender';
+import { sendOtpToEmail } from '../packages/email-sender/emailSender';
 import path from 'path';
 import ejs from 'ejs';
 import CryptoJS from "crypto-js";

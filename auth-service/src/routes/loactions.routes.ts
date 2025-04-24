@@ -1,6 +1,6 @@
 import express from 'express';
 import { addLocationForOrg, deleteLocationFromOrg, getAllLocationsForOrg, getLocationIdForOrg, updateLocationInOrg } from '../controllers/loactions.controllers';
-import { verifyAccessToken } from '../../packages/midleware/authMiddleware';
+import { verifyAccessToken } from '../packages/midleware/authMiddleware';
 
 const router = express.Router();
 // @ts-ignore

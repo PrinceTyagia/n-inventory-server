@@ -1,7 +1,7 @@
 import express from 'express';
 import { createOrganization,  deleteOrganizationAndUsers, getAllOrganizations,  getOrganizationById,  getTrialStatusById, verifyOtpOrganization } from '../controllers/organisation.controllers';
-import { authorizeSuperAdmin } from '../../packages/midleware/authorizeSuperAdmin';
-import { verifyAccessToken } from '../../packages/midleware/authMiddleware';
+import { authorizeSuperAdmin } from '../packages/midleware/authorizeSuperAdmin';
+import { verifyAccessToken } from '../packages/midleware/authMiddleware';
 
 
 const router = express.Router();

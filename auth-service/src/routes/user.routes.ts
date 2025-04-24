@@ -1,7 +1,7 @@
 import express from 'express';
-import { authorizeSuperAdmin } from '../../packages/midleware/authorizeSuperAdmin';
+import { authorizeSuperAdmin } from '../packages/midleware/authorizeSuperAdmin';
 import { getAllUsers, getAllUsersByOrganization, handleInvitationLink, sendInviteLink } from '../controllers/user.controller';
-import { verifyAccessToken } from '../../packages/midleware/authMiddleware';
+import { verifyAccessToken } from '../packages/midleware/authMiddleware';
 
 
 const router = express.Router();

@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyAccessToken } from '../../packages/midleware/authMiddleware';
+import { verifyAccessToken } from '../packages/midleware/authMiddleware';
 import { createRoleForOrganization, deleteRoleByOrgAndRoleId, getRoleByOrgAndRoleId, getRolesByOrgId, updateRoleByOrgAndRoleId } from '../controllers/organisation.controllers';
 const router = express.Router();
 
