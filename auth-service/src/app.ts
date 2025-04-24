@@ -4,7 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import swaggerFile from "./swagger-output.json"
 import swaggerUi from 'swagger-ui-express';
-import connectDB from "./db/database.js"
+import connectDB from "./db/database"
 
 const app = express();
 dotenv.config();
@@ -29,12 +29,12 @@ app.get('/docs-json', (req, res) => {
   res.json(swaggerFile);
 });
 
-import healthRouter from "./routes/health.js"
-import authRouter from "./routes/auth.routes.js"
-import orgRouter from "./routes/orgainsation.routes.js"
-import userRouter from "./routes/user.routes.js"
-import locRouter from "./routes/loactions.routes.js"
-import roleRouter from "./routes/role.routes.js"
+import healthRouter from "./routes/health"
+import authRouter from "./routes/auth.routes"
+import orgRouter from "./routes/orgainsation.routes"
+import userRouter from "./routes/user.routes"
+import locRouter from "./routes/loactions.routes"
+import roleRouter from "./routes/role.routes"
 app.use('/api/v1', healthRouter);
 app.use("/api/v1/",authRouter)
 app.use("/api/v1/",orgRouter)

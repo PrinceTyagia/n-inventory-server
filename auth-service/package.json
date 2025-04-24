@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "swagger": "ts-node src/auth-service/swagger.ts",
-    "dev": "nodemon src/app.ts",
+    "build": "tsc",
     "start": "node dist/src/app.js",
-    "build": "tsc"
+    "swagger": "ts-node src/auth-service/swagger.ts",
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/app.ts"
   },
   "keywords": [],
   "author": "",
