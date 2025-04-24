@@ -14,5 +14,5 @@
     // "noEmit": true,
     "allowImportingTsExtensions": false
   },
-  "include": ["src/auth-service/**/*", "src/packages"]
+  "include": ["src/**/*", "packages"]
 }

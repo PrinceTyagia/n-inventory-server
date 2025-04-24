@@ -4,8 +4,8 @@
   "main": "index.js",
   "scripts": {
     "swagger": "ts-node src/auth-service/swagger.ts",
-    "dev": "nodemon src/auth-service/app.ts",
-    "start": "node dist/auth-service/app.js",
+    "dev": "nodemon src/app.ts",
+    "start": "node src/app.ts",
     "build": "tsc"
   },
   "keywords": [],
