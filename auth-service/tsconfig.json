@@ -10,7 +10,9 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "useUnknownInCatchVariables": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "types": ["node"]
+    
     // "allowSyntheticDefaultImports": true,
     // "noImplicitAny": true,
     // "noEmit": true,
@@ -18,5 +20,6 @@
     // "types": ["node"],
   //  "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
