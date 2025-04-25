@@ -8,7 +8,7 @@ interface IUserCookies {
 
 const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: Response) => {
   const cookieOptions = {
-    httpOnly: false,
+    httpOnly: true,
     secure: process.env.NODE_ENV === "production", // Set to true in production
     sameSite: "strict" as const,
   };
