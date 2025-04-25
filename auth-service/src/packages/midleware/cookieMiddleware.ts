@@ -9,9 +9,10 @@ interface IUserCookies {
 const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: Response) => {
   const cookieOptions = {
     httpOnly: true,
-    secure: true, // Set to true in production
-    sameSite: "strict" as const,
-     // path: "/",
+    secure: false, // 👈 DISABLE THIS ONLY for localhost frontend
+    sameSite: "lax" as const, // 👈 Use 'lax' for better local behavior
+    // secure: true,
+    // sameSite: "strict",
   };
 
   // Set cookies for accessToken, refreshToken, and user data
