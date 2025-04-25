@@ -11,7 +11,7 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
     httpOnly: true,
     secure: true, // Set to true in production
     sameSite: "strict" as const,
-     path: "/",
+     // path: "/",
   };
 
   // Set cookies for accessToken, refreshToken, and user data
