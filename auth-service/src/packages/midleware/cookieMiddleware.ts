@@ -20,7 +20,7 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   const cookieOptions: CookieOptions = {
   httpOnly: true, 
   secure: true, // because frontend is also https now
-  sameSite: "none", // cross-site cookies needs 'none' for credentials
+  sameSite: "none" as const,
   };
 
   // Set cookies with maxAge for expiration
