@@ -1,10 +1,10 @@
 import { Response, CookieOptions } from 'express';
 
-// interface IUserCookies {
-//   accessToken: string;
-//   refreshToken: string;
-//   user: object;
-// }
+interface IUserCookies {
+  accessToken: string;
+  refreshToken: string;
+  user: object;
+}
 
 // const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: Response) => {
 //  const cookieOptions: CookieOptions = {
