@@ -10,6 +10,7 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // important!
   };
 
   // Set cookies for accessToken, refreshToken, and user data
