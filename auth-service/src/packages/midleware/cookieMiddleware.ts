@@ -9,8 +9,8 @@ interface IUserCookies {
 const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: Response) => {
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // important!
+    secure: true, // because backend is https (render.com)
+    sameSite: "none", // cross-site cookies need SameSite none
   };
 
   // Set cookies for accessToken, refreshToken, and user data
