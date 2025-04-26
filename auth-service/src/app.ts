@@ -14,7 +14,7 @@ connectDB()
 // CORS Configuration
 app.use(
   cors({
-    origin: ['https://localhost:3000'],
+    origin: ['https://localhost:3000','https://n-inventory-frontend.vercel.app/'],
     allowedHeaders: ['Authorization', 'Content-Type', 'orgid'],
     credentials: true,
   })
