@@ -18,8 +18,10 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   // Set cookie options
   const cookieOptions: CookieOptions = {
    httpOnly: true,
-  secure: true, // only use true in production
-  sameSite: 'none', // 'none' if cross-site with HTTPS
+  // secure: true, // only use true in production
+  // sameSite: 'none', // 'none' if cross-site with HTTPS
+  secure: false, // only use true in production
+  sameSite: 'lax', // 'none' if cross-site with HTTPS
   };
 
   // Set cookies with maxAge for expiration
