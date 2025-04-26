@@ -131,7 +131,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
         role: "superAdmin",
         displayName: "Super Administrator",
       };
-
+      res.setHeader('x-vercel-set-bypass-cookie', 'samesitenone');
       // Set the authentication cookies
       setAuthCookies({ accessToken, refreshToken, user: userData }, res);
 
