@@ -20,6 +20,7 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
    httpOnly: true,
   secure: true, // only use true in production
   sameSite: 'none', // 'none' if cross-site with HTTPS
+    domain: '.vercel.app'
   // secure: false, // only use true in production
   // sameSite: 'lax', // 'none' if cross-site with HTTPS
   };
