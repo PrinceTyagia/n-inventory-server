@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, CookieOptions } from 'express';
 
 interface IUserCookies {
   accessToken: string;
@@ -7,7 +7,7 @@ interface IUserCookies {
 }
 
 const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: Response) => {
-  const cookieOptions = {
+  const cookieOptions: CookieOptions = {
     httpOnly: true,
     secure: true, // because backend is https (render.com)
     sameSite: "none", // cross-site cookies need SameSite none
