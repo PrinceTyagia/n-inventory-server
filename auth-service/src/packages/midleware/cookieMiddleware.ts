@@ -39,6 +39,7 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
     ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
+    res.setHeader('x-vercel-set-bypass-cookie', 'samesitenone');
 };
 
 export { setAuthCookies };
