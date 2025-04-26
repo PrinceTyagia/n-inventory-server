@@ -15,17 +15,17 @@ interface IUserCookies {
 
 //   // Set cookies for accessToken, refreshToken, and user data
 //   res.cookie("accessToken", accessToken, {
-    ...cookieOptions,
+    // ...cookieOptions,
 //     maxAge: 24 * 60 * 60 * 1000, // 1 day
 //   });
 
 //   res.cookie("refreshToken", refreshToken, {
-    ...cookieOptions,
+    // ...cookieOptions,
 //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 //   });
 
 //   res.cookie("user", JSON.stringify(user), {
-    ...cookieOptions,
+    // ...cookieOptions,
 //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 //   });
 // };
@@ -47,17 +47,17 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   };
 
   res.cookie("accessToken", accessToken, {
-    ...cookieOptions,
+    // ...cookieOptions,
     maxAge: 24 * 60 * 60 * 1000,
   });
 
   res.cookie("refreshToken", refreshToken, {
-    ...cookieOptions,
+    // ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
   res.cookie("user", JSON.stringify(user), {
-    ...cookieOptions,
+    // ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
