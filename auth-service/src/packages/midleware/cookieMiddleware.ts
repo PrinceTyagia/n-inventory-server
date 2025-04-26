@@ -20,7 +20,7 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   const cookieOptions: CookieOptions = {
     httpOnly: true, // Make cookies inaccessible to JavaScript
     secure: process.env.NODE_ENV === "production", // Secure cookies only in production
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // "none" for cross-origin in production, "lax" for localhost
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict", // "none" for cross-origin in production, "lax" for localhost
   };
 
   // Set cookies with maxAge for expiration
