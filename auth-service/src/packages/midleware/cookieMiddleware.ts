@@ -41,9 +41,9 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   const localhost = isLocalhost(origin);
 
   const cookieOptions: CookieOptions = {
-    httpOnly: true,
-    secure: !localhost, // localhost => false, else true
-    sameSite: localhost ? "lax" : "none", // localhost => lax, else none
+ httpOnly: false,
+    secure: process.env.NODE_ENV === "production", // Set to true in production
+    sameSite: "strict" as const,
   };
 
   res.cookie("accessToken", accessToken, {
