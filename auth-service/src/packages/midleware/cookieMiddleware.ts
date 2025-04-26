@@ -19,7 +19,7 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   const cookieOptions: CookieOptions = {
   httpOnly: true, 
   secure: true,
-  sameSite: 'none',
+  sameSite: 'None',
   };
 
   // Set cookies with maxAge for expiration
