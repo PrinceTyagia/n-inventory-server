@@ -24,7 +24,7 @@ app.use(
 // Middleware Setup
 app.use(express.json()); 
 app.use(cookieParser()); 
-
+app.set('trust proxy', 1)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
 app.get('/docs-json', (req, res) => {
   res.json(swaggerFile);
