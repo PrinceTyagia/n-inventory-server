@@ -20,6 +20,10 @@ app.use(
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
 );
+app.use((req, res, next) => {
+  res.setHeader('x-vercel-set-bypass-cookie', 'samesitenone');
+  next();
+});
 
 // Middleware Setup
 app.use(express.json()); 
