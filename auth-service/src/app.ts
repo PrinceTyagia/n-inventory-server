@@ -26,7 +26,7 @@ app.use(
 app.use(express.json()); 
 app.use(cookieParser()); 
 app.set('trust proxy', 1)
-res.setHeader('x-vercel-set-bypass-cookie', 'samesitenone');
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
 app.get('/docs-json', (req, res) => {
   res.json(swaggerFile);
