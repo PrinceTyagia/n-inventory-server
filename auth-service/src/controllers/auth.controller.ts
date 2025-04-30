@@ -133,7 +133,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
       };
       res.setHeader('x-vercel-set-bypass-cookie', 'samesitenone');
       // Set the authentication cookies
-      setAuthCookies({ accessToken, refreshToken, user: userData }, res);
+      // setAuthCookies({ accessToken, refreshToken, user: userData }, res);
 
       return res.send({
         success: true,
