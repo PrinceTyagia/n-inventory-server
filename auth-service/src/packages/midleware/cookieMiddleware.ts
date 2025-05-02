@@ -21,7 +21,7 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   secure: true, 
   sameSite: 'none',
     path:'/',
-    domain: 'vercel.app'  
+
  
   };
 
