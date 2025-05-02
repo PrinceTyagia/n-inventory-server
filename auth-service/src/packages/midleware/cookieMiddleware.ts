@@ -20,7 +20,8 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
    httpOnly: true,
   secure: true, 
   sameSite: 'none',
-    path:'/'
+    path:'/',
+    domain: 'vercel.app'  
  
   };
 
