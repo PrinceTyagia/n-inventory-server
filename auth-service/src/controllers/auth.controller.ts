@@ -131,7 +131,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
         role: "superAdmin",
         displayName: "Super Administrator",
       };
-     res.setHeader('Cache-Control', 'no-store');
+     // res.setHeader('Cache-Control', 'no-store');
       // Set the authentication cookies
       setAuthCookies({ accessToken, refreshToken, user: userData }, res);
 
@@ -229,7 +229,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
     };
 
     // Set the authentication cookies
-    res.setHeader('Cache-Control', 'no-store');
+    // res.setHeader('Cache-Control', 'no-store');
     setAuthCookies({ accessToken, refreshToken, user: userData }, res);
 
     // Update the last login time for the user
