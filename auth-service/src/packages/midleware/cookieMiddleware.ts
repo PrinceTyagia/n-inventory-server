@@ -18,9 +18,9 @@ const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: 
   // Set cookie options
   const cookieOptions: CookieOptions = {
    httpOnly: true,
-  secure: false, 
-  sameSite: 'lax',
-    path:'/'
+  // secure: false, 
+  // sameSite: 'lax',
+    // path:'/'
  
   };
 
