@@ -11,8 +11,9 @@
     "skipLibCheck": true,
     "useUnknownInCatchVariables": false,
     "noImplicitAny": false,
-    "types": ["node"]
-    
+    // "types": [""]
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"]
     // "allowSyntheticDefaultImports": true,
     // "noImplicitAny": true,
     // "noEmit": true,

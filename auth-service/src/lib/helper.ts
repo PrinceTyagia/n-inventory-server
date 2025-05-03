@@ -23,3 +23,6 @@ export const checkSubscriptionStatus = (org: any): boolean => {
     }
   };
   
+  export const  addTwoNumbers = (a: number, b: number) => {
+    return a + b;
+  }
