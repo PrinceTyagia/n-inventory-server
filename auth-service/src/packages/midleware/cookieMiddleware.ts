@@ -13,8 +13,7 @@ const isLocalhost = (origin: string | undefined) => {
 };
 
 const setAuthCookies = ({ accessToken, refreshToken, user }: IUserCookies, res: Response) => {
-  const origin = res.req.headers.origin; // Get frontend origin
-  const localhost = isLocalhost(origin);
+
 
   // Set cookie options
   const cookieOptions: CookieOptions = {
