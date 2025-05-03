@@ -16,11 +16,7 @@ const transporter = nodemailer.createTransport({
 });
 // Generate OTP and send email
 export const sendOtpToEmail = async ({
-  email = '',
-  otp = '',
-  subject = 'Your OTP Code',
-  text = '',
-  html
+  email = '', otp = '', subject = '', text = '', html
 }: SendEmailOptions) => {
   if (!email) {
     throw new Error("Email is required to send OTP.");

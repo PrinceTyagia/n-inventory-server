@@ -1,77 +1,57 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import nodemailer from "nodemailer";
-import otpGenerator from "otp-generator";
+
 import Organization from "../models/organisation"; // Import Organization model
 import User from "../models/User";
 import cron from "node-cron";
-// Email configuration using Nodemailer
-const transporter = nodemailer.createTransport({
-  host: "smtp.ethereal.email",
-  port: 587,
-  auth: {
-    user: "merle.ondricka@ethereal.email",
-    pass: "EfxDBKrCqZP8gzUGq6",
-  },
-});
+import { otp, tenDaysFromNow } from "../utils/helperfunctions";
+import { sendOtpToEmail } from "../packages/email-sender/emailSender";
+import { SuperAdminPreArray } from "../utils/constant";
+import { redis } from "../db/redis";
 
-// Generate and send OTP to email
-export const sendOtpToEmail = async (email: string, otp: string) => {
-  const mailOptions = {
-    from: "vikranttyagia@gmail.com", // Sender's email
-    to: email, // Recipient's email
-    subject: "Organization Email Verification OTP",
-    text: `Your OTP for email verification is: ${otp}. This OTP is valid for 10 minutes.`,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log("OTP sent successfully to", email);
-  } catch (error) {
-    console.error("Error sending OTP", error);
-    throw new Error("Failed to send OTP.");
-  }
-};
 // Step 1: Create Organization (Basic Details) with OTP
 const createOrganization = async (req: Request, res: Response) => {
   const {
-    orgName,
-    email,
-    password,
     adminName,
     billingPlan = "free",
-    state,
-    country,
     contactNumber,
+    email,
+    orgName,
+    password,
   } = req.body;
-
   try {
-    const existingOrg = await Organization.findOne({ email });
-    if (existingOrg) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Organization already exists with this email.",
-        });
+    // check organizations parameter is exist or not ?
+    const matches = await Organization.find(
+      {
+        $or: [
+          { email: email },
+          { orgName: orgName },
+          { contactNumber: contactNumber },
+        ],
+      },
+      { email: 1, orgName: 1, contactNumber: 1, _id: 0 } // projection for performance
+    ).lean();
+
+    if (matches.length > 0) {
+      const conflicts = new Set();
+      matches.forEach((doc) => {
+        if (doc.email === email) conflicts.add("email");
+        if (doc.orgName === orgName) conflicts.add("Organisation");
+        if (doc.contactNumber === contactNumber) conflicts.add("Phone no");
+      });
+      return res.status(400).json({
+        success: false,
+        message: `Organization already exists with the same: ${[
+          ...conflicts,
+        ].join(", ")}.`,
+      });
     }
 
-    const otp = otpGenerator.generate(6, {
-      digits: true,
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false, // 💡 This is important!
-      specialChars: false,
-    });
-
-    const tenDaysFromNow = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
     const newOrganization = new Organization({
       orgName,
       email,
       adminName,
       billingPlan,
-      state,
-      country,
-      otp,
       registrationDate: new Date(),
       subscriptionEndsAt: billingPlan === "free" ? tenDaysFromNow : null,
       orgStatus: "pending",
@@ -84,39 +64,36 @@ const createOrganization = async (req: Request, res: Response) => {
       _id: roleId,
       roleName: "Admin",
       description: "Full system access",
-      permissions: [
-        "dashboard.create",
-        "profile.update",
-        "users.manage",
-        "settings.manage",
-      ],
+      permissions: SuperAdminPreArray,
       createdBy: newOrganization._id,
     };
 
     newOrganization.roles.push(adminRole);
-
-    const [firstName, ...rest] = adminName.trim().split(" ");
     const newUser = new User({
-      firstName,
-      lastName: rest.join(" ") || "",
-      slug: (firstName + rest.join(" ")).toLowerCase().replace(/\s+/g, ""),
+      firstName: adminName,
+      lastName: "",
+      slug: adminName.toLowerCase().replace(/\s+/g, ""),
       phone: contactNumber,
       email,
       password,
       organisation: newOrganization._id,
       role: roleId,
     });
-
     const savedUser = await newUser.save();
-
     newOrganization.users.push({
       userId: savedUser._id,
       roleId: roleId,
     });
 
     await newOrganization.save();
-
-    await sendOtpToEmail(email, otp);
+    await redis.set(`org:otp:${email}`, otp, "EX", 120);
+    // 600 in 10 second validation
+    await sendOtpToEmail({
+      email,
+      otp,
+      subject: "Organization Email Verification OTP",
+      text: `Your OTP for email verification is: ${otp}. This OTP is valid for 2 minutes.`,
+    });
 
     return res.status(201).json({
       success: true,
@@ -143,21 +120,33 @@ const verifyOtpOrganization = async (req: Request, res: Response) => {
   try {
     // Find the organization by email
     const organization = await Organization.findOne({ email });
-
     if (!organization) {
       return res
         .status(404)
         .json({ success: false, message: "Organization not found." });
     }
 
-    // Check if OTP matches
-    if (organization.otp !== otp) {
-      return res.status(400).json({ success: false, message: "Invalid OTP." });
+    // Retrieve the OTP from Redis using the organization email as the key
+    const redisKey = `org:otp:${email}`;
+    const storedOtp = await redis.get(redisKey);
+
+    // Check if the OTP exists in Redis and matches the one sent by the user
+    if (!storedOtp) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired or doesn't exist. Please request a new OTP.",
+      });
     }
 
-    // Mark organization as verified
+    if (storedOtp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP provided. Please check and try again.",
+      });
+    }
+
+    // Mark the organization as verified
     organization.orgStatus = "verified";
-    organization.otp = undefined; // remove OTP after verification
     await organization.save();
 
     // Set isVerified: true for the admin user
@@ -170,6 +159,9 @@ const verifyOtpOrganization = async (req: Request, res: Response) => {
       adminUser.isVerified = true;
       await adminUser.save();
     }
+
+    // Delete OTP from Redis to prevent reuse
+    await redis.del(redisKey);
 
     return res.status(200).json({
       success: true,
@@ -188,94 +180,55 @@ const verifyOtpOrganization = async (req: Request, res: Response) => {
       .json({ success: false, message: "Error verifying OTP.", error });
   }
 };
-// step 3 // Function to check and update organization trial subscription status
-const checkTrialSubscriptions = async () => {
-  try {
-    // Get the current date
-    const currentDate = new Date();
-
-    // Find all organizations with a 'free' billing plan and subscription end date
-    const organizations = await Organization.find({
-      billingPlan: "free",
-      subscriptionEndsAt: { $lte: currentDate },
-    });
-
-    // Iterate over the organizations and update their status
-    for (const organization of organizations) {
-      if (
-        organization.subscriptionEndsAt &&
-        organization.subscriptionEndsAt <= currentDate
-      ) {
-        // If trial has expired, mark the organization as inactive
-        organization.orgStatus = "inactive" as any; // Or 'expired' based on your logic
-        await organization.save();
-        console.log(
-          `Organization ${organization._id} has been marked as inactive due to expired trial.`
-        );
-      }
-    }
-  } catch (error) {
-    console.error("Error checking trial subscriptions:", error);
-  }
-};
-// Schedule the cron job to run daily (you can adjust the interval as needed)
-cron.schedule("0 0 * * *", checkTrialSubscriptions); // This runs every day at midnight
-// Step 4 // get trialStatus by id information
-const getTrialStatusById = async (req: Request, res: Response) => {
-  const { orgId } = req.params; // Get the orgId from the URL parameters
+//Step 3 : Resend Otp in Email
+const resendOtpOrganization = async (req: Request, res: Response) => {
+  const { email } = req.body;
 
   try {
-    // Fetch the organization by its ID
-    const organization = await Organization.findById(orgId) as any;
+    // Find the organization by email
+    const organization = await Organization.findOne({ email });
 
-    // If organization is not found, return 404
     if (!organization) {
-      return res.status(404).json({
+      return res
+        .status(404)
+        .json({ success: false, message: "Organization not found." });
+    }
+
+    // Check if OTP exists and is still valid in Redis
+    const redisKey = `org:otp:${email}`;
+    const storedOtp = await redis.get(redisKey);
+
+    // If OTP exists and is still valid (not expired), return an error to avoid resending too soon
+    if (storedOtp) {
+      return res.status(400).json({
         success: false,
-        message: "Organization not found.",
+        message:
+          "OTP already sent. Please wait for it to expire before requesting a new one.",
       });
     }
+    // Store the new OTP in Redis with an expiration time of 2 minutes
+    await redis.set(`org:otp:${email}`, otp, "EX", 120);
+    // 600 in 10 second validation
+    await sendOtpToEmail({
+      email,
+      otp,
+      subject: "Organization Email Verification OTP",
+      text: `Your OTP for email verification is: ${otp}. This OTP is valid for 2 minutes.`,
+    });
 
-    // Calculate the remaining days using the getRemainingDays method
-    const remainingDays = organization.getRemainingDays();
-    let trialStatusMessage = "";
-
-    // Check the status based on the remaining days
-    if (remainingDays <= 0) {
-      trialStatusMessage = "Your trial has expired.";
-    } else if (remainingDays <= 7) {
-      trialStatusMessage = `Your trial is expiring in ${remainingDays} day${
-        remainingDays > 1 ? "s" : ""
-      }.`;
-    } else {
-      trialStatusMessage = `Your trial is active with ${remainingDays} day${
-        remainingDays > 1 ? "s" : ""
-      } remaining.`;
-    }
-
-    // Return the organization status along with trial details
+    // Return success response
     return res.status(200).json({
       success: true,
-      message: "Organization trial status fetched successfully.",
-      data: {
-        orgName: organization.orgName,
-        billingPlan: organization.billingPlan,
-        trialStatus: trialStatusMessage,
-        remainingDays: remainingDays,
-        subscriptionEndsAt: organization.subscriptionEndsAt,
-      },
+      message: "OTP has been resent successfully. Please check your email.",
     });
   } catch (error) {
-    // Log the error and send a 500 response in case of any issues
-    console.error("Error fetching trial status by ID:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error fetching trial status by ID.",
-      error,
-    });
+    console.error("Resend OTP error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Error resending OTP.", error });
   }
 };
-// Step 5 Get All Organizations with pagination and search filter
+// Step 4 Get All Organizations with pagination and search filter
 const getAllOrganizations = async (req: Request, res: Response) => {
   const { search = "", page = "1", limit = "10" } = req.query;
 
@@ -332,28 +285,27 @@ const getAllOrganizations = async (req: Request, res: Response) => {
 };
 //Step 6 Get organization by ID
 const getOrganizationById = async (req: Request, res: Response) => {
-  const { orgId } = req.params;
+  const orgId = req.headers["orgid"];
 
+  if (!orgId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "orgId is required in headers" });
+  }
   try {
-    const isValidObjectId = mongoose.Types.ObjectId.isValid(orgId);
-
-    const organization = await Organization.findOne(
-      isValidObjectId ? { _id: orgId } : { slug: orgId }
-    );
-
+    const organization = await Organization.findById(orgId).lean();
     if (!organization) {
       return res
         .status(404)
         .json({ success: false, message: "Organization not found" });
     }
-
     return res.status(200).json({
       success: true,
       message: "Organization fetched successfully",
       data: organization,
     });
   } catch (error) {
-    console.error("Error fetching organization:", error);
+    // console.error("Error fetching organization:", error);
     return res.status(500).json({
       success: false,
       message: "Error fetching organization.",
@@ -361,6 +313,95 @@ const getOrganizationById = async (req: Request, res: Response) => {
     });
   }
 };
+
+// step 3 // Function to check and update organization trial subscription status
+const checkTrialSubscriptions = async () => {
+  try {
+    // Get the current date
+    const currentDate = new Date();
+
+    // Find all organizations with a 'free' billing plan and subscription end date
+    const organizations = await Organization.find({
+      billingPlan: "free",
+      subscriptionEndsAt: { $lte: currentDate },
+    });
+
+    // Iterate over the organizations and update their status
+    for (const organization of organizations) {
+      if (
+        organization.subscriptionEndsAt &&
+        organization.subscriptionEndsAt <= currentDate
+      ) {
+        // If trial has expired, mark the organization as inactive
+        organization.orgStatus = "inactive" as any; // Or 'expired' based on your logic
+        await organization.save();
+        console.log(
+          `Organization ${organization._id} has been marked as inactive due to expired trial.`
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Error checking trial subscriptions:", error);
+  }
+};
+// Schedule the cron job to run daily (you can adjust the interval as needed)
+cron.schedule("0 0 * * *", checkTrialSubscriptions); // This runs every day at midnight
+// Step 4 // get trialStatus by id information
+const getTrialStatusById = async (req: Request, res: Response) => {
+  const { orgId } = req.params; // Get the orgId from the URL parameters
+
+  try {
+    // Fetch the organization by its ID
+    const organization = (await Organization.findById(orgId)) as any;
+
+    // If organization is not found, return 404
+    if (!organization) {
+      return res.status(404).json({
+        success: false,
+        message: "Organization not found.",
+      });
+    }
+
+    // Calculate the remaining days using the getRemainingDays method
+    const remainingDays = organization.getRemainingDays();
+    let trialStatusMessage = "";
+
+    // Check the status based on the remaining days
+    if (remainingDays <= 0) {
+      trialStatusMessage = "Your trial has expired.";
+    } else if (remainingDays <= 7) {
+      trialStatusMessage = `Your trial is expiring in ${remainingDays} day${
+        remainingDays > 1 ? "s" : ""
+      }.`;
+    } else {
+      trialStatusMessage = `Your trial is active with ${remainingDays} day${
+        remainingDays > 1 ? "s" : ""
+      } remaining.`;
+    }
+
+    // Return the organization status along with trial details
+    return res.status(200).json({
+      success: true,
+      message: "Organization trial status fetched successfully.",
+      data: {
+        orgName: organization.orgName,
+        billingPlan: organization.billingPlan,
+        trialStatus: trialStatusMessage,
+        remainingDays: remainingDays,
+        subscriptionEndsAt: organization.subscriptionEndsAt,
+      },
+    });
+  } catch (error) {
+    // Log the error and send a 500 response in case of any issues
+    console.error("Error fetching trial status by ID:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching trial status by ID.",
+      error,
+    });
+  }
+};
+
 // Step 7 Delete organization or user by orgId
 const deleteOrganizationAndUsers = async (req: Request, res: Response) => {
   const { orgId } = req.params;
@@ -393,315 +434,13 @@ const deleteOrganizationAndUsers = async (req: Request, res: Response) => {
     });
   }
 };
-// superAdmin
-// Step 8 Get All Role by Organization
-const getRolesByOrgId = async (req: Request, res: Response) => {
-  const orgId = req.headers['orgid'] as string;
-  // console.log("orgid",orgId);
-  try {
-    if (!orgId || typeof orgId !== 'string') {
-      return res.status(400).json({
-        success: false,
-        message: "orgId is required in headers and must be a string.",
-      });
-    }
-    const { page = 1, limit = 10, search = '' } = req.query;
-    const organization = await Organization.findById(orgId);
-    // console.log("organization",organization);
-    
-
-    if (!organization) {
-      return res.status(404).json({
-        success: false,
-        message: "Organization not found sss.",
-      });
-    }
-
-    const searchString = typeof search === 'string' ? search.toLowerCase() : '';
-
-    const allRoles = organization.roles || [];
-    const filteredRoles = allRoles.filter(role =>
-      role.roleName.toLowerCase().includes(searchString)
-    );
-
-    const totalRoles = filteredRoles.length;
-    const pageNumber = parseInt(page as string);
-    const limitNumber = parseInt(limit as string);
-    const totalPages = Math.ceil(totalRoles / limitNumber);
-    const startIndex = (pageNumber - 1) * limitNumber;
-    const paginatedRoles = filteredRoles.slice(startIndex, startIndex + limitNumber);
-
-    return res.status(200).json({
-      success: true,
-      message: "Roles fetched successfully.",
-      roles: paginatedRoles,
-      page: pageNumber,
-      totalRoles,
-      totalPages,
-    });
-  } catch (error) {
-    console.error("Error fetching roles:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error while fetching roles.",
-    });
-  }
-};
-// Step 9 create Role for Organization
-const createRoleForOrganization = async (req: Request, res: Response) => {
-  const orgId = req.headers['orgid'] as string;  // Get orgId from headers
-  const { roleName, description, permissions } = req.body;
-  const createdBy = req.user?.userId;  // Assuming that user ID is available after verifying the token
-
-  // Validate createdBy and orgId
-  if (!createdBy || typeof createdBy !== 'string') {
-    return res.status(400).json({ success: false, message: 'CreatedBy is required' });
-  }
-  
-  if (!orgId || typeof orgId !== 'string') {
-    return res.status(400).json({ success: false, message: 'Organization ID is required in headers' });
-  }
-
-  // Validate roleName
-  if (!roleName) {
-    return res.status(400).json({ success: false, message: 'Role name is required' });
-  }
-
-  try {
-    // Find the organization by orgId
-    const organization = await Organization.findById(orgId);
-    if (!organization) {
-      return res.status(404).json({ success: false, message: 'Organization not found' });
-    }
-
-    // Check if role already exists within the organization's roles array
-    const roleExists = organization.roles.some(role => role.roleName.toLowerCase() === roleName.toLowerCase());
-    if (roleExists) {
-      return res.status(400).json({ success: false, message: 'Role name already exists in this organization' });
-    }
-
-    // Create new role
-    const newRole = {
-      roleName,
-      description,
-      permissions,
-      createdBy,
-      createdAt: new Date(),
-    };
-
-    // Add the new role to the organization's roles array
-    organization.roles.push(newRole);
-    
-    // Save the organization with the new role
-    await organization.save();
-
-    return res.status(201).json({
-      success: true,
-      message: 'Role created successfully',
-      role: newRole,
-    });
-  } catch (error) {
-    console.error('Error creating role:', error);
-    return res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-//Step 10 get Role by Id and Org ID 
-const getRoleByOrgAndRoleId = async (req: Request, res: Response) => {
-  const orgId = req.headers['orgid'];
-  const { roleId } = req.params;
-
-  if (!orgId || typeof orgId !== 'string') {
-    return res.status(400).json({ success: false, message: 'orgId is required in headers' });
-  }
-
-  if (!roleId || !mongoose.Types.ObjectId.isValid(roleId)) {
-    return res.status(400).json({ success: false, message: 'Invalid or missing roleId' });
-  }
-
-  try {
-    const organization = await Organization.findById(orgId);
-    if (!organization) {
-      return res.status(404).json({ success: false, message: 'Organization not found sss' });
-    }
-
-    const role = organization.roles.id(roleId); // Mongoose subdocument access
-
-    if (!role) {
-      return res.status(404).json({ success: false, message: 'Role not found' });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Role fetched successfully',
-      role,
-    });
-  } catch (error) {
-    console.error('Error fetching role:', error);
-    return res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-//Step 11 Update Role by ORG Id and Role Id
-const updateRoleByOrgAndRoleId = async (req: Request, res: Response) => {
-  const orgId = req.headers['orgid'];
-  
-  const { roleName, description, permissions ,roleId} = req.body;
-
-  if (!orgId || typeof orgId !== 'string') {
-    return res.status(400).json({ success: false, message: 'orgId is required in headers' });
-  }
-
-  if (!roleId || !mongoose.Types.ObjectId.isValid(roleId)) {
-    return res.status(400).json({ success: false, message: 'Invalid or missing roleId' });
-  }
-
-  try {
-    const organization = await Organization.findById(orgId);
-    if (!organization) {
-      return res.status(404).json({ success: false, message: 'Organization not found' });
-    }
-
-    const role = organization.roles.id(roleId);
-    if (!role) {
-      return res.status(404).json({ success: false, message: 'Role not found' });
-    }
-
-    // Update fields if provided
-    if (roleName) role.roleName = roleName;
-    if (description !== undefined) role.description = description;
-    if (Array.isArray(permissions)) role.permissions = permissions;
-
-    await organization.save();
-
-    return res.status(200).json({
-      success: true,
-      message: 'Role updated successfully',
-      role,
-    });
-  } catch (error) {
-    console.error('Error updating role:', error);
-    return res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-//Step 12 Delete Role by ORG Id and Role Id
-const deleteRoleByOrgAndRoleId = async (req: Request, res: Response) => {
-  const orgId = req.headers['orgid'];
-  const { roleId } = req.params;
-
-  if (!orgId || typeof orgId !== 'string') {
-    return res.status(400).json({ success: false, message: 'orgId is required in headers' });
-  }
-
-  if (!roleId || !mongoose.Types.ObjectId.isValid(roleId)) {
-    return res.status(400).json({ success: false, message: 'Invalid or missing roleId' });
-  }
-
-  try {
-    const organization = await Organization.findById(orgId);
-    if (!organization) {
-      return res.status(404).json({ success: false, message: 'Organization not found' });
-    }
-
-    const roleIndex = organization.roles.findIndex((role: any) => role._id.toString() === roleId);
-    if (roleIndex === -1) {
-      return res.status(404).json({ success: false, message: 'Role not found' });
-    }
-
-    organization.roles.splice(roleIndex, 1); // remove role from array
-    await organization.save();
-
-    return res.status(200).json({
-      success: true,
-      message: 'Role deleted successfully',
-    });
-  } catch (error) {
-    console.error('Error deleting role:', error);
-    return res.status(500).json({ success: false, message: 'Server error' });
-  }
-};
-// Step 13
-// export const createDummyLocationsForOrg = async (orgId) => {
-//   try {
-//     if (!orgId || !mongoose.Types.ObjectId.isValid(orgId)) {
-//       throw new Error('Invalid orgId');
-//     }
-
-//     const organization = await Organization.findById(orgId);
-//     if (!organization) {
-//       throw new Error('Organization not found');
-//     }
-
-//     // Define the dummy locations
-//     const dummyLocations = [
-//       {
-//         name: 'Central Warehouse',
-//         type: 'warehouse',
-//         address: 'Plot 42, Industrial Area, City',
-//         phone: '9999990001',
-//         email: 'warehouse@example.com',
-//         isActive: true,
-//       },
-//       {
-//         name: 'Main Retail Shop',
-//         type: 'retail-shop',
-//         address: '1st Floor, Mall, Downtown',
-//         phone: '9999990002',
-//         email: 'retail@example.com',
-//         isActive: true,
-//       },
-//       {
-//         name: 'Franchise Outlet',
-//         type: 'franchise-store',
-//         address: 'Sector 10, Nearby Park',
-//         phone: '9999990003',
-//         email: 'franchise@example.com',
-//         isActive: true,
-//       },
-//       {
-//         name: 'Online Fulfillment Center',
-//         type: 'online-store',
-//         address: 'eComm Zone, Building B',
-//         phone: '9999990004',
-//         email: 'online@example.com',
-//         isActive: true,
-//       },
-//     ];
-
-//     // Add dummy locations directly to the locations array
-//     organization.locations.push(...dummyLocations);
-
-//     // Save the organization with the updated locations array
-//     await organization.save();
-
-//     console.log('Dummy locations created and added to organization');
-//     return { message: 'Dummy locations created and added to organization', locations: dummyLocations };
-//   } catch (error) {
-//     console.error('Error creating locations:', error);
-//     throw new Error('Server error: ' + error.message);
-//   }
-// };
-// const orgId = '6803722c3fd1f3f09ef6039b'; // Replace with actual organization ID
-
-// // Call the function and handle the response
-// createDummyLocationsForOrg(orgId)
-//   .then((response) => {
-//     console.log('Locations created:', response);
-//   })
-//   .catch((error) => {
-//     console.error('Error:', error.message);
-//   });
-
-
 
 export {
   createOrganization,
   verifyOtpOrganization,
-  getTrialStatusById,
+  resendOtpOrganization,
   getAllOrganizations,
   getOrganizationById,
   deleteOrganizationAndUsers,
-  getRolesByOrgId,
-  createRoleForOrganization,
-  getRoleByOrgAndRoleId,
-  updateRoleByOrgAndRoleId,
-  deleteRoleByOrgAndRoleId
+  getTrialStatusById,
 };

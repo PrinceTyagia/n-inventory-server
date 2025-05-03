@@ -57,84 +57,13 @@ const getAllUsers = async (req:Request, res:Response) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-// Step2 Get All User By Organization 
-// const getAllUsersByOrganization = async (req: Request, res: Response) => {
-//   try {
-//     const orgId = req.headers['orgid'];
-//     console.log("req.headers",req.headers);
-    
 
-//     if (!orgId) {
-//       return res.status(400).json({success: false, message: 'orgId is required in headers' });
-//     }
-
-//     const { page = '1', limit = '10', search = '' }: { page?: string, limit?: string, search?: string } = req.query;
-
-//     const pageNumber = parseInt(page as string, 10);
-//     const limitNumber = parseInt(limit as string, 10);
-//     const skip = (pageNumber - 1) * limitNumber;
-
-//     // Find the organization
-//     const organization = await Organization.findById(orgId).lean();
-
-//     if (!organization) {
-//       return res.status(404).json({success: false, message: 'Organization not found' });
-//     }
-
-//     const userIds = organization.users.map((u: any) => u.userId);
-
-//     if (userIds.length === 0) {
-//       return res.json({
-//         users: [],
-//         page: pageNumber,
-//         totalUsers: 0,
-//         totalPages: 0,
-//       });
-//     }
-
-//     // Build search query
-//     let query: any = { _id: { $in: userIds } };
-
-//     if (search) {
-//       const cleanSearch = search.toString().trim().toLowerCase();
-//       const searchRegex = new RegExp(cleanSearch.split(/\s+/).join('.*'), 'i');
-
-//       query = {
-//         ...query,
-//         $or: [
-//           { firstName: { $regex: searchRegex } },
-//           { lastName: { $regex: searchRegex } },
-//           { email: { $regex: searchRegex } }, // Add more fields if needed
-//         ],
-//       };
-//     }
-
-//     const [users, totalUsers] = await Promise.all([
-//       User.find(query).skip(skip).limit(limitNumber),
-//       User.countDocuments(query),
-//     ]);
-
-//     return res.json({
-//       success: true,
-//       message:"User Successfully fetch by orgId",
-//       users,
-//       page: pageNumber,
-//       totalUsers,
-//       totalPages: Math.ceil(totalUsers / limitNumber),
-//     });
-//   } catch (error) {
-//     console.error('Error fetching users by organization:', error);
-//     return res.status(500).json({ success: false, message: 'Server error' });
-//   }
-// };
 const getAllUsersByOrganization = async (req: Request, res: Response) => {
   try {
     const orgId = req.headers['orgid'];
-
     if (!orgId) {
       return res.status(400).json({ success: false, message: 'orgId is required in headers' });
     }
-
     const {
       page = '1',
       limit = '10',
@@ -215,19 +144,13 @@ const getAllUsersByOrganization = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
-
-
-
-
 const sendInviteLink = async (req: Request, res: Response) => {
   try {
     const { email, location, role, orgName } = req.body;
     const orgId = req.headers["orgid"] as string;
-
     if (!email || !location || !role || !orgId || !orgName) {
       return res.status(400).json({ message: "Missing required fields" });
     }
-
     // Generate a unique token for the invitation link
     const inviteToken = generateInvitationToken();
     console.log("inviteToken",inviteToken);
@@ -343,9 +266,6 @@ const handleInvitationLink = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: "Something went wrong while accepting the invite." });
   }
 };
-
-
-
 // Function to generate a unique token (e.g., using random bytes or crypto)
 const generateInvitationToken = () => {
   const timestamp = new Date().getTime();

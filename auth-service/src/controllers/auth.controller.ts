@@ -220,7 +220,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
       roleId: userRole._id,
       role: userRole.roleName,
       isVerified: user.isVerified,
-      permissions: userRole.permissions,
+      // permissions: userRole.permissions,
       displayName: userRole.roleName,
       organisation: org.orgName,
       organisationId: org._id,

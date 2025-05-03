@@ -67,6 +67,7 @@ const organizationSchema = new mongoose.Schema({
       type: String,
       required: true,
       unique: true,
+    
     },
     orgStatus: {
       type: String,
@@ -77,7 +78,6 @@ const organizationSchema = new mongoose.Schema({
       type: Boolean,
       default: true,
     },
-    otp: String, // For verification
     adminName: {
       type: String,
       required: true,
