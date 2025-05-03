@@ -14,15 +14,18 @@ connectDB()
 // CORS Configuration
 app.use(
   cors({
-    origin: ['http://localhost:3000'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'orgid'],
+    origin: ['http://localhost:3000','https://n-inventory-frontend.onrender.com', 'https://n-inventory-frontend.vercel.app','n-inventory-frontend-40qjahy7u-princetyagias-projects.vercel.app'],
     credentials: true,
+    allowedHeaders: ['Authorization', 'Content-Type', 'orgid'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
 );
+
 
 // Middleware Setup
 app.use(express.json()); 
 app.use(cookieParser()); 
+app.set('trust proxy', 1)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
 app.get('/docs-json', (req, res) => {
@@ -43,7 +46,7 @@ app.use("/api/v1/",locRouter)
 app.use("/api/v1/",roleRouter)
 
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.AUTH_SERVICE_PORT || 8000;
 
 app.listen(PORT, () => {
     console.log(`✅ Auth Service is running on port ${PORT}`);
